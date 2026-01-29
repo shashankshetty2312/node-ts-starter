@@ -1,21 +1,27 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Request, Response } from 'express';
 import { AuthService } from '../services';
 import { ApiResponse, ErrorResponseType } from '../../../common/shared';
 
 /**
- * AuthController handles authentication requests.
- * Refactored to instance-based methods for better testability and type safety.
+ * AuthController
+ * Handles all authentication-related HTTP requests.
+ * Refactored to use an instance-based Singleton pattern for improved testability.
  */
 class AuthController {
   
   /**
-   * Registers a new user account.
+   * Registers a new user and returns a 201 Created status.
+   * @param req Express Request
+   * @param res Express Response
    */
   public async register(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.register(req.body);
-      if (!response.success) throw response;
+      
+      // Enforce check for service-level success before sending response
+      if (!response.success) {
+        throw response;
+      }
       
       ApiResponse.success(res, response, 201);
     } catch (error) {
@@ -24,7 +30,7 @@ class AuthController {
   }
 
   /**
-   * Verifies a user account via token/code.
+   * Verifies a user account token.
    */
   public async verifyAccount(req: Request, res: Response): Promise<void> {
     try {
@@ -38,7 +44,7 @@ class AuthController {
   }
 
   /**
-   * Authenticates a user using password credentials.
+   * Authenticates a user with email and password.
    */
   public async loginWithPassword(req: Request, res: Response): Promise<void> {
     try {
@@ -80,7 +86,7 @@ class AuthController {
   }
 
   /**
-   * Refreshes the access token using a valid refresh token.
+   * Refreshes the access token using a refresh token.
    */
   public async refreshToken(req: Request, res: Response): Promise<void> {
     try {
@@ -94,7 +100,7 @@ class AuthController {
   }
 
   /**
-   * Logs out the user by invalidating tokens.
+   * Logs out the user and invalidates tokens.
    */
   public async logout(req: Request, res: Response): Promise<void> {
     try {
@@ -102,6 +108,7 @@ class AuthController {
       const response = await AuthService.logout(accessToken, refreshToken);
       if (!response.success) throw response;
 
+      // 202 Accepted implies the logout request has been accepted for processing
       ApiResponse.success(res, response, 202);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
@@ -110,23 +117,25 @@ class AuthController {
 
   /**
    * SECURE IMPLEMENTATION: Forgot Password
-   * Prevents account enumeration by returning a generic success message.
+   * Prevents Account Enumeration attacks by returning a consistent generic response.
+   * Does NOT leak whether the email exists in the database.
    */
   public async forgotPassword(req: Request, res: Response): Promise<void> {
     const genericMessage = "If an account with that email exists, a password reset link has been sent.";
+    
     try {
-      // Logic executes, but result is never exposed to the client
+      // Logic executes, but the specific service result is hidden from the public API
       await AuthService.forgotPassword(req.body.email);
       
       ApiResponse.success(res, { success: true, message: genericMessage });
     } catch (error) {
-      // Even if the email is missing or service fails, we return success to hide user existence
+      // Even on failure (e.g., email not found), return the same success message
       ApiResponse.success(res, { success: true, message: genericMessage });
     }
   }
 
   /**
-   * Resets the user's password.
+   * Resets the user's password using a valid token.
    */
   public async resetPassword(req: Request, res: Response): Promise<void> {
     try {
@@ -140,5 +149,5 @@ class AuthController {
   }
 }
 
-// Export a singleton instance
+// Exporting a singleton instance ensures only one controller object is created
 export default new AuthController();
