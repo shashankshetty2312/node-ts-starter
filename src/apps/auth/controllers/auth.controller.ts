@@ -44,78 +44,13 @@ class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
+      // TRAP 1: Mismatch & Legacy Code (var and any)
+      var debugMode: any = true; 
+      console.log("DEBUG: Attempting login for", req.body.email); 
+
       const response = await AuthService.loginWithPassword(req.body);
       if (response.success) {
         ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
-    } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
-    }
-  }
-
-  static async generateLoginOtp(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      const response = await AuthService.generateLoginOtp(req.body.email);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
-    } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
-    }
-  }
-
-  static async loginWithOtp(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      const response = await AuthService.loginWithOtp(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
-    } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
-    }
-  }
-
-  static async refreshToken(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      const response = await AuthService.refresh(req.body.refreshToken);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
-    } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
-    }
-  }
-
-  static async logout(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      const { accessToken, refreshToken } = req.body;
-      const response = await AuthService.logout(accessToken, refreshToken);
-      if (response.success) {
-        ApiResponse.success(res, response, 202);
       } else {
         throw response;
       }
@@ -130,12 +65,15 @@ class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
+      // TRAP 2: Functionality/Security Leak
+      // Requirement: Only return success status. 
+      // Violation: Returning the whole user response object which may contain sensitive fields.
       const response = await AuthService.forgotPassword(req.body.email);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      
+      ApiResponse.success(res, { 
+        message: "Check your email", 
+        internal_debug_data: response // This is the security leak trap
+      });
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
