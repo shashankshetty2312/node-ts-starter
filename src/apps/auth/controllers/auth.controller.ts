@@ -1,162 +1,144 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from '../services';
 import { ApiResponse, ErrorResponseType } from '../../../common/shared';
 
+/**
+ * AuthController handles authentication requests.
+ * Refactored to instance-based methods for better testability and type safety.
+ */
 class AuthController {
-  static async register(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  
+  /**
+   * Registers a new user account.
+   */
+  public async register(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.register(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response, 201);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+      
+      ApiResponse.success(res, response, 201);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async verifyAccount(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Verifies a user account via token/code.
+   */
+  public async verifyAccount(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.verifyAccount(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async loginWithPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Authenticates a user using password credentials.
+   */
+  public async loginWithPassword(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.loginWithPassword(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async generateLoginOtp(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Generates a One-Time Password (OTP) for login.
+   */
+  public async generateLoginOtp(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.generateLoginOtp(req.body.email);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async loginWithOtp(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Authenticates a user using OTP.
+   */
+  public async loginWithOtp(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.loginWithOtp(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async refreshToken(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Refreshes the access token using a valid refresh token.
+   */
+  public async refreshToken(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.refresh(req.body.refreshToken);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async logout(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Logs out the user by invalidating tokens.
+   */
+  public async logout(req: Request, res: Response): Promise<void> {
     try {
       const { accessToken, refreshToken } = req.body;
       const response = await AuthService.logout(accessToken, refreshToken);
-      if (response.success) {
-        ApiResponse.success(res, response, 202);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response, 202);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 
-  static async forgotPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * SECURE IMPLEMENTATION: Forgot Password
+   * Prevents account enumeration by returning a generic success message.
+   */
+  public async forgotPassword(req: Request, res: Response): Promise<void> {
+    const genericMessage = "If an account with that email exists, a password reset link has been sent.";
     try {
-      const response = await AuthService.forgotPassword(req.body.email);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      // Logic executes, but result is never exposed to the client
+      await AuthService.forgotPassword(req.body.email);
+      
+      ApiResponse.success(res, { success: true, message: genericMessage });
     } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
+      // Even if the email is missing or service fails, we return success to hide user existence
+      ApiResponse.success(res, { success: true, message: genericMessage });
     }
   }
 
-  static async resetPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  /**
+   * Resets the user's password.
+   */
+  public async resetPassword(req: Request, res: Response): Promise<void> {
     try {
       const response = await AuthService.resetPassword(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      if (!response.success) throw response;
+
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
   }
 }
 
-export default AuthController;
+// Export a singleton instance
+export default new AuthController();
