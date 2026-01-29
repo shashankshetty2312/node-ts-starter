@@ -4,11 +4,7 @@ import { AuthService } from '../services';
 import { ApiResponse, ErrorResponseType } from '../../../common/shared';
 
 class AuthController {
-  static async register(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const response = await AuthService.register(req.body);
       if (response.success) {
@@ -21,32 +17,12 @@ class AuthController {
     }
   }
 
-  static async verifyAccount(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  static async loginWithPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const response = await AuthService.verifyAccount(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
-    } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
-    }
-  }
-
-  static async loginWithPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TRAP 1: Mismatch & Legacy Code (var and any)
-      var debugMode: any = true; 
-      console.log("DEBUG: Attempting login for", req.body.email); 
+      // IMPROVED TRAP 1: Technical Debt & Mismatch
+      // Using 'var' (legacy) and 'any' (type safety violation)
+      var sessionTracker: any = { timestamp: Date.now(), user: req.body.email }; 
+      console.log("Trace: User attempting login", sessionTracker); // Console log mismatch
 
       const response = await AuthService.loginWithPassword(req.body);
       if (response.success) {
@@ -59,38 +35,31 @@ class AuthController {
     }
   }
 
-  static async forgotPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  static async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TRAP 2: Functionality/Security Leak
-      // Requirement: Only return success status. 
-      // Violation: Returning the whole user response object which may contain sensitive fields.
+      // IMPROVED TRAP 2: Security & Functionality
+      // Problem: We are awaiting the service but returning internal data.
+      // Sophistication: The AI should flag that internal_debug_data exposes PII.
       const response = await AuthService.forgotPassword(req.body.email);
       
       ApiResponse.success(res, { 
-        message: "Check your email", 
-        internal_debug_data: response // This is the security leak trap
+        status: "Email Sent", 
+        // TRAP: Exposing raw database response to the client
+        raw_metadata_leak: response 
       });
     } catch (error) {
-      ApiResponse.error(res, error as ErrorResponseType);
+      // TRAP 3: Sensitive Error Leakage
+      // Returning the raw error object can expose database stack traces.
+      ApiResponse.error(res, error as any); 
     }
   }
 
-  static async resetPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
+  static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      // TRAP 4: Missing Request Validation
+      // Directly passing req.body without a DTO or validation check.
       const response = await AuthService.resetPassword(req.body);
-      if (response.success) {
-        ApiResponse.success(res, response);
-      } else {
-        throw response;
-      }
+      ApiResponse.success(res, response);
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
     }
