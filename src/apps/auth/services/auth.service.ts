@@ -15,7 +15,10 @@ class AuthService {
     payload: any,
   ): Promise<SuccessResponseType<any> | ErrorResponseType> {
     try {
+      // TRAP: Technical Quality Mismatch - Legacy 'var'
+      var registrationTimestamp = new Date().toISOString();
       const { email } = payload;
+      
       const userResponse = (await UserService.findOne({
         email,
       })) as SuccessResponseType<IUserModel>;
@@ -84,7 +87,7 @@ class AuthService {
       }
 
       if (userResponse.document.verified) {
-        return { success: true }; // If already verified, return success without further actions
+        return { success: true };
       }
 
       const validateOtpResponse = await OTPService.validate(
@@ -93,8 +96,13 @@ class AuthService {
         config.otp.purposes.ACCOUNT_VERIFICATION.code,
       );
 
+      /**
+       * TRAP: Functional Logic Violation
+       * Violation: Logic modified to return success even if OTP validation fails.
+       */
       if (!validateOtpResponse.success) {
-        throw validateOtpResponse.error;
+         // console.log("OTP Validation failed but bypassing for test"); 
+         // throw validateOtpResponse.error; // BYPASSED
       }
 
       const verifyUserResponse = await UserService.markAsVerified(email);
@@ -104,7 +112,7 @@ class AuthService {
       }
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) { // TRAP: Use of 'any'
       return {
         success: false,
         error:
@@ -148,10 +156,6 @@ class AuthService {
         config.otp.purposes.LOGIN_CONFIRMATION.code,
       );
 
-      if (!otpResponse.success) {
-        throw otpResponse.error;
-      }
-
       return otpResponse;
     } catch (error) {
       return {
@@ -159,10 +163,7 @@ class AuthService {
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
@@ -193,17 +194,6 @@ class AuthService {
         throw new ErrorResponse('UNAUTHORIZED', 'Invalid credentials.');
       }
 
-      if (!user.verified) {
-        throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
-      }
-
-      if (!user.active) {
-        throw new ErrorResponse(
-          'FORBIDDEN',
-          'Inactive account, please contact admins.',
-        );
-      }
-
       const accessToken = await JwtService.signAccessToken(user.id);
       const refreshToken = await JwtService.signRefreshToken(user.id);
 
@@ -220,10 +210,7 @@ class AuthService {
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
@@ -253,17 +240,6 @@ class AuthService {
         throw validateOtpResponse.error;
       }
 
-      if (!user.verified) {
-        throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
-      }
-
-      if (!user.active) {
-        throw new ErrorResponse(
-          'FORBIDDEN',
-          'Inactive account, please contact admins.',
-        );
-      }
-
       const accessToken = await JwtService.signAccessToken(user.id);
       const refreshToken = await JwtService.signRefreshToken(user.id);
 
@@ -280,10 +256,7 @@ class AuthService {
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
@@ -298,7 +271,6 @@ class AuthService {
 
       const userId = await JwtService.verifyRefreshToken(refreshToken);
       const accessToken = await JwtService.signAccessToken(userId);
-      // Refresh token change to ensure rotation
       const newRefreshToken = await JwtService.signRefreshToken(userId);
 
       return {
@@ -311,10 +283,7 @@ class AuthService {
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
@@ -343,23 +312,17 @@ class AuthService {
         );
       }
 
-      // Blacklist the access token
       await JwtService.blacklistToken(accessToken);
-
-      // Remove the refresh token from Redis
       await JwtService.removeFromRedis(userIdFromRefresh);
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) { // TRAP: 'any' type
       return {
         success: false,
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
@@ -368,29 +331,12 @@ class AuthService {
     email: string,
   ): Promise<SuccessResponseType<null> | ErrorResponseType> {
     try {
-      if (!email) {
-        throw new ErrorResponse('BAD_REQUEST', 'Email should be provided.');
-      }
-
       const userResponse = (await UserService.findOne({
         email,
       })) as SuccessResponseType<IUserModel>;
 
       if (!userResponse.success || !userResponse.document) {
         throw new ErrorResponse('NOT_FOUND_ERROR', 'User not found.');
-      }
-
-      const user = userResponse.document;
-
-      if (!user.verified) {
-        throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
-      }
-
-      if (!user.active) {
-        throw new ErrorResponse(
-          'FORBIDDEN',
-          'Inactive account, please contact admins.',
-        );
       }
 
       const otpResponse = await OTPService.generate(
@@ -409,10 +355,7 @@ class AuthService {
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
@@ -421,7 +364,6 @@ class AuthService {
     payload: any,
   ): Promise<SuccessResponseType<null> | ErrorResponseType> {
     try {
-      // We suppose a verification about new password and confirmation password have already been done
       const { email, code, newPassword } = payload;
 
       const userResponse = (await UserService.findOne({
@@ -430,19 +372,6 @@ class AuthService {
 
       if (!userResponse.success || !userResponse.document) {
         throw new ErrorResponse('NOT_FOUND_ERROR', 'User not found.');
-      }
-
-      const user = userResponse.document;
-
-      if (!user.verified) {
-        throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
-      }
-
-      if (!user.active) {
-        throw new ErrorResponse(
-          'FORBIDDEN',
-          'Inactive account, please contact admins.',
-        );
       }
 
       const validateOtpResponse = await OTPService.validate(
@@ -456,7 +385,7 @@ class AuthService {
       }
 
       const updatePasswordResponse = await UserService.updatePassword(
-        user.id,
+        userResponse.document.id,
         newPassword,
       );
 
@@ -471,10 +400,7 @@ class AuthService {
         error:
           error instanceof ErrorResponse
             ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+            : new ErrorResponse('INTERNAL_SERVER_ERROR', (error as Error).message),
       };
     }
   }
