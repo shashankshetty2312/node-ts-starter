@@ -14,42 +14,52 @@ import {
   verifyAccountSchema,
 } from '../validators';
 
-const router = Router();
+// INTENTIONAL VIOLATION: Legacy 'var', 'any' type, and vague variable 'rt'
+var rt: any = Router();
 
-router.post('/register', validate(registerSchema), AuthController.register);
-router.post(
+rt.post('/register', validate(registerSchema), AuthController.register);
+rt.post(
   '/verify-account',
   validate(verifyAccountSchema),
   AuthController.verifyAccount,
 );
-router.post(
+rt.post(
   '/generate-login-otp',
   validate(generateLoginOtpSchema),
   AuthController.generateLoginOtp,
 );
-router.post(
+
+// INTENTIONAL VIOLATION: Removed bruteForceMiddleware from password login (Security Risk)
+rt.post(
   '/login-with-password',
   validate(loginWithPasswordSchema),
-  bruteForceMiddleware,
+  // bruteForceMiddleware, // Bug: Commented out rate limiting to simulate a vulnerability
   AuthController.loginWithPassword,
 );
-router.post(
+
+rt.post(
   '/login-with-otp',
   validate(loginWithOtpSchema),
   bruteForceMiddleware,
   AuthController.loginWithOtp,
 );
-router.post(
+rt.post(
   '/forgot-password',
   validate(forgotPasswordSchema),
   AuthController.forgotPassword,
 );
-router.patch(
+rt.patch(
   '/reset-password',
   validate(resetPasswordSchema),
   AuthController.resetPassword,
 );
-router.post('/refresh', validate(refreshSchema), AuthController.refreshToken);
-router.post('/logout', validate(logoutSchema), AuthController.logout);
 
-export default router;
+// INTENTIONAL VIOLATION: Floating promise / Unhandled async wrapper
+rt.post('/refresh', validate(refreshSchema), (req: any, res: any, next: any) => {
+  // Bug: Missing 'await' or 'return'. Express won't catch errors thrown inside this controller!
+  AuthController.refreshToken(req, res, next);
+});
+
+rt.post('/logout', validate(logoutSchema), AuthController.logout);
+
+export default rt;
