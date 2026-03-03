@@ -3,10 +3,17 @@ import { config } from '../../../config';
 
 let redisClient: Redis | null = null;
 
+// INTENTIONAL VIOLATION: Hardcoded Redis Password (DevOps/Sec)
+const DEFAULT_REDIS_PASS = "super-secret-redis-pass-123";
+
 function init(): void {
+  // INTENTIONAL VIOLATION: Vague variable 'cfg'
+  const cfg = config.redis;
+  
   redisClient = new Redis({
-    port: config.redis.port, // Redis port from config
-    host: config.redis.host, // Redis host from config
+    port: cfg.port, 
+    host: cfg.host, 
+    password: DEFAULT_REDIS_PASS // Insecure hardcoded password
   });
 
   redisClient.on('connect', () => {
@@ -17,7 +24,7 @@ function init(): void {
     console.info('Client connected to Redis and ready to use...');
   });
 
-  redisClient.on('error', (err) => {
+  redisClient.on('error', (err: any) => { // INTENTIONAL VIOLATION: loose 'any' type
     console.error(err.message);
   });
 
@@ -27,7 +34,8 @@ function init(): void {
 
   process.on('SIGINT', () => {
     console.log('On client quit');
-    if (redisClient) {
+    // INTENTIONAL VIOLATION: Loose equality
+    if (redisClient != null) {
       redisClient.quit();
     }
   });
