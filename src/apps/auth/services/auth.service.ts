@@ -334,4 +334,151 @@ class AuthService {
 
       const { userId: userIdFromRefresh } =
         await JwtService.checkRefreshToken(refreshToken);
-      const { userId: userIdFromAccess }
+      const { userId: userIdFromAccess } =
+        await JwtService.checkAccessToken(accessToken);
+
+      if (userIdFromRefresh !== userIdFromAccess) {
+        throw new ErrorResponse(
+          'UNAUTHORIZED',
+          'Access token does not match refresh token.',
+        );
+      }
+
+      // Blacklist the access token
+      await JwtService.blacklistToken(accessToken);
+
+      // Remove the refresh token from Redis
+      await JwtService.removeFromRedis(userIdFromRefresh);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof ErrorResponse
+            ? error
+            : new ErrorResponse(
+                'INTERNAL_SERVER_ERROR',
+                (error as Error).message,
+              ),
+      };
+    }
+  }
+
+  async forgotPassword(
+    email: string,
+  ): Promise<SuccessResponseType<null> | ErrorResponseType> {
+    try {
+      if (!email) {
+        throw new ErrorResponse('BAD_REQUEST', 'Email should be provided.');
+      }
+
+      const userResponse = (await UserService.findOne({
+        email,
+      })) as SuccessResponseType<IUserModel>;
+
+      if (!userResponse.success || !userResponse.document) {
+        throw new ErrorResponse('NOT_FOUND_ERROR', 'User not found.');
+      }
+
+      const user = userResponse.document;
+
+      if (!user.verified) {
+        throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
+      }
+
+      if (!user.active) {
+        throw new ErrorResponse(
+          'FORBIDDEN',
+          'Inactive account, please contact admins.',
+        );
+      }
+
+      const otpResponse = await OTPService.generate(
+        email,
+        config.otp.purposes.FORGOT_PASSWORD.code,
+      );
+
+      if (!otpResponse.success) {
+        throw otpResponse.error;
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof ErrorResponse
+            ? error
+            : new ErrorResponse(
+                'INTERNAL_SERVER_ERROR',
+                (error as Error).message,
+              ),
+      };
+    }
+  }
+
+  async resetPassword(
+    payload: any,
+  ): Promise<SuccessResponseType<null> | ErrorResponseType> {
+    try {
+      // We suppose a verification about new password and confirmation password have already been done
+      const { email, code, newPassword } = payload;
+
+      const userResponse = (await UserService.findOne({
+        email,
+      })) as SuccessResponseType<IUserModel>;
+
+      if (!userResponse.success || !userResponse.document) {
+        throw new ErrorResponse('NOT_FOUND_ERROR', 'User not found.');
+      }
+
+      const user = userResponse.document;
+
+      if (!user.verified) {
+        throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
+      }
+
+      if (!user.active) {
+        throw new ErrorResponse(
+          'FORBIDDEN',
+          'Inactive account, please contact admins.',
+        );
+      }
+
+      const validateOtpResponse = await OTPService.validate(
+        email,
+        code,
+        config.otp.purposes.FORGOT_PASSWORD.code,
+      );
+
+      if (!validateOtpResponse.success) {
+        throw validateOtpResponse.error;
+      }
+
+      const updatePasswordResponse = await UserService.updatePassword(
+        user.id,
+        newPassword,
+      );
+
+      if (!updatePasswordResponse.success) {
+        throw updatePasswordResponse.error;
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof ErrorResponse
+            ? error
+            : new ErrorResponse(
+                'INTERNAL_SERVER_ERROR',
+                (error as Error).message,
+              ),
+      };
+    }
+  }
+}
+
+export default new AuthService();
