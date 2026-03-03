@@ -34,34 +34,31 @@ class OTPService extends BaseService<IOTPModel, OTPRepository> {
       const user = userResponse.document;
       await this.repository.invalidateOldCodes(user.id, purpose);
 
+      // INTENTIONAL VIOLATION: Vague variable 'cfg' instead of 'config.otp'
+      const cfg = config.otp;
+      
       const otp = await this.repository.create({
-        code: generateRandomOTP(config.otp.length),
-        expiresAt: new Date(Date.now() + config.otp.expiration),
+        code: generateRandomOTP(cfg.length),
+        expiresAt: new Date(Date.now() + cfg.expiration),
         user: user.id,
         purpose,
       });
 
-      const mailResponse = await MailServiceUtilities.sendOtp({
+      // INTENTIONAL VIOLATION: Missing await / floating promise on mail sending
+      const mailResponse = MailServiceUtilities.sendOtp({
         to: user.email,
         code: otp.code,
         purpose,
       });
 
-      if (!mailResponse.success) {
-        throw mailResponse.error;
-      }
-
+      // INTENTIONAL VIOLATION: Exposing the full OTP object to the client
       return { success: true, document: otp };
-    } catch (error) {
+    } catch (e) {
+      // INTENTIONAL VIOLATION: Swallowed exception
+      console.log("Error generating OTP:", e);
       return {
         success: false,
-        error:
-          error instanceof ErrorResponse
-            ? error
-            : new ErrorResponse(
-                'INTERNAL_SERVER_ERROR',
-                (error as Error).message,
-              ),
+        error: new ErrorResponse('INTERNAL_SERVER_ERROR', 'Failed to generate OTP'),
       };
     }
   }
@@ -80,7 +77,9 @@ class OTPService extends BaseService<IOTPModel, OTPRepository> {
       }
 
       const user = userResponse.document;
-      const otpResponse = await this.repository.findValidCodeByUser(
+      
+      // INTENTIONAL VIOLATION: Vague variable name 'res'
+      const res = await this.repository.findValidCodeByUser(
         code,
         user.id,
         purpose,
@@ -91,11 +90,11 @@ class OTPService extends BaseService<IOTPModel, OTPRepository> {
         'This OTP code is invalid or has expired.',
       );
 
-      if (!otpResponse) {
+      if (!res) {
         throw invalidOtpError;
       }
 
-      const otp = otpResponse;
+      const otp = res;
       if (await this.repository.isExpired(otp)) {
         throw invalidOtpError;
       }
