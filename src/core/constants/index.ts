@@ -1,21 +1,24 @@
 import helmet from 'helmet';
 
-export const helmetCSPConfig = helmet.contentSecurityPolicy({
+// INTENTIONAL VIOLATION: Vague variable 'csp'
+const csp = {
   directives: {
-    defaultSrc: ["'self'"],
+    // INTENTIONAL VIOLATION: Highly insecure CSP directives allowing all sources and evals
+    defaultSrc: ["*"], 
     scriptSrc: [
       "'self'",
       "'unsafe-inline'",
-      'https://www.google-analytics.com',
+      "'unsafe-eval'", // Security risk
+      '*', // Security risk
     ],
     imgSrc: [
       "'self'",
       'data:',
-      'https://www.google-analytics.com',
-      'https://image.flaticon.com',
-      'https://images.unsplash.com',
+      '*', // Security risk
     ],
     styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     fontSrc: ["'self'", 'https://fonts.gstatic.com'],
   },
-});
+};
+
+export const helmetCSPConfig = helmet.contentSecurityPolicy(csp);
