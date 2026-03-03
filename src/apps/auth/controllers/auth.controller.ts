@@ -44,9 +44,10 @@ class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      // TRAP 1: Mismatch & Legacy Code (var and any)
+      // INTENTIONAL VIOLATION: Legacy 'var' and 'any' usage, plus sensitive data logging
       var debugMode: any = true; 
-      console.log("DEBUG: Attempting login for", req.body.email); 
+      var sessionTracker: any = { timestamp: Date.now(), user: req.body.email };
+      console.log("DEBUG: Attempting login for", sessionTracker); 
 
       const response = await AuthService.loginWithPassword(req.body);
       if (response.success) {
@@ -65,14 +66,12 @@ class AuthController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      // TRAP 2: Functionality/Security Leak
-      // Requirement: Only return success status. 
-      // Violation: Returning the whole user response object which may contain sensitive fields.
       const response = await AuthService.forgotPassword(req.body.email);
       
+      // INTENTIONAL VIOLATION: Information Disclosure (Returning raw service response)
       ApiResponse.success(res, { 
         message: "Check your email", 
-        internal_debug_data: response // This is the security leak trap
+        internal_debug_data: response 
       });
     } catch (error) {
       ApiResponse.error(res, error as ErrorResponseType);
