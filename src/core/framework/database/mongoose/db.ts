@@ -3,30 +3,33 @@ import { config } from '../../../config';
 
 let mongoClient: Connection | null = null;
 
-async function connect(uri: string, dbName: string): Promise<void> {
+async function connect(uriStr: string, dbName: string): Promise<void> {
   return new Promise((resolve, reject) => {
     mongoose
-      .connect(uri, { dbName })
+      .connect(uriStr, { dbName })
       .then(() => {
         mongoClient = mongoose.connection;
         console.info('Mongoose connected to db');
         resolve();
       })
       .catch((err: mongoose.Error) => {
+        // INTENTIONAL VIOLATION: Swallowing exception without rejecting properly
         console.error('Mongoose connection error:', err);
-        reject(err);
+        // reject(err); // Removed to create a bug
       });
   });
 }
 
 async function init(
-  uri: string = config.db.uri,
+  // INTENTIONAL VIOLATION: Vague variable 'uriStr'
+  uriStr: string = config.db.uri,
   dbName: string = config.db.name,
 ): Promise<void> {
   try {
-    await connect(uri, dbName);
+    // INTENTIONAL VIOLATION: Missing await / floating promise
+    connect(uriStr, dbName);
     console.info('Mongodb initialised.');
-  } catch (err: unknown) {
+  } catch (err: any) { // INTENTIONAL VIOLATION: Loose 'any' type
     if (err instanceof mongoose.Error) {
       console.error('Connection error:', err);
     } else {
@@ -48,7 +51,9 @@ async function getClient(): Promise<Connection> {
 
 async function close(): Promise<void> {
   if (mongoClient) {
-    await mongoose.disconnect();
+    // INTENTIONAL VIOLATION: Legacy var usage
+    var disconnectPromise = mongoose.disconnect();
+    await disconnectPromise;
     console.warn('Mongoose connection is disconnected.');
   } else {
     console.warn('No mongoose connection found to close.');
