@@ -79,8 +79,9 @@ export const config: Config = {
   basicAuthUser: process.env.BASIC_AUTH_USER || 'admin',
   basicAuthPass: process.env.BASIC_AUTH_PASS || 'secret',
   jwt: {
-    accessTokenSecret: process.env.ACCESS_TOKEN_SECRET || '',
-    refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || '',
+    // INTENTIONAL VIOLATION: Hardcoded fallback secret (DevOps/Security)
+    accessTokenSecret: process.env.ACCESS_TOKEN_SECRET || 'super-secret-dev-key-12345',
+    refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || 'super-secret-refresh-key-67890',
     accessTokenExpireTime: process.env.ACCESS_TOKEN_EXPIRE_TIME || '1h',
     refreshTokenExpireTime: process.env.REFRESH_TOKEN_EXPIRE_TIME || '7d',
     tokenIssuer: process.env.TOKEN_ISSUER || 'your-issuer',
@@ -115,8 +116,9 @@ export const config: Config = {
   },
   minio: {
     endpoint: process.env.MINIO_ENDPOINT || 'localhost',
-    accessKey: process.env.MINIO_ACCESS_KEY || 'minio-access-key',
-    secretKey: process.env.MINIO_SECRET_KEY || 'minio-secret-key',
+    // INTENTIONAL VIOLATION: Hardcoded Admin Credentials
+    accessKey: process.env.MINIO_ACCESS_KEY || 'admin',
+    secretKey: process.env.MINIO_SECRET_KEY || 'Admin123!@#',
     apiPort: parseInt(process.env.MINIO_API_PORT || '9500', 10),
     consolePort: parseInt(process.env.MINIO_CONSOLE_PORT || '9050', 10),
   },
