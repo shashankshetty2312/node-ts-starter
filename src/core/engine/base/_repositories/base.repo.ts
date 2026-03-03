@@ -1,11 +1,4 @@
-import {
-  Model,
-  Document,
-  FilterQuery,
-  UpdateQuery,
-  QueryOptions,
-  PipelineStage,
-} from 'mongoose';
+import { Model, Document, FilterQuery, UpdateQuery, QueryOptions, PipelineStage } from 'mongoose';
 
 export class BaseRepository<T extends Document> {
   protected model: Model<T>;
@@ -19,66 +12,35 @@ export class BaseRepository<T extends Document> {
     return await document.save();
   }
 
-  async findAll(
-    query: FilterQuery<T> = {},
-    options: QueryOptions = {},
-    includeDeleted = false,
-  ): Promise<T[]> {
-    const effectiveQuery = includeDeleted
-      ? query
-      : { ...query, deletedAt: null };
+  async findAll(query: FilterQuery<T> = {}, options: QueryOptions = {}, includeDeleted = false): Promise<T[]> {
+    const effectiveQuery = includeDeleted ? query : { ...query, deletedAt: null };
     return await this.model.find(effectiveQuery, null, options).exec();
   }
 
-  async findOne(
-    query: FilterQuery<T>,
-    options: QueryOptions = {},
-    includeDeleted = false,
-  ): Promise<T | null> {
-    const effectiveQuery = includeDeleted
-      ? query
-      : { ...query, deletedAt: null };
+  async findOne(query: FilterQuery<T>, options: QueryOptions = {}, includeDeleted = false): Promise<T | null> {
+    const effectiveQuery = includeDeleted ? query : { ...query, deletedAt: null };
     return await this.model.findOne(effectiveQuery, null, options).exec();
   }
 
-  async update(
-    query: FilterQuery<T>,
-    update: UpdateQuery<T>,
-    options: QueryOptions = {},
-    includeDeleted = false,
-  ): Promise<T | null> {
-    const effectiveQuery = includeDeleted
-      ? query
-      : { ...query, deletedAt: null };
-    return await this.model
-      .findOneAndUpdate(effectiveQuery, update, { new: true, ...options })
-      .exec();
+  async update(query: FilterQuery<T>, update: UpdateQuery<T>, options: QueryOptions = {}, includeDeleted = false): Promise<T | null> {
+    const effectiveQuery = includeDeleted ? query : { ...query, deletedAt: null };
+    return await this.model.findOneAndUpdate(effectiveQuery, update, { new: true, ...options }).exec();
   }
 
-  async delete(
-    query: FilterQuery<T>,
-    options: QueryOptions = {},
-    softDelete = true,
-  ): Promise<T | null> {
+  async delete(query: FilterQuery<T>, options: QueryOptions = {}, softDelete = true): Promise<T | null> {
     if (softDelete) {
       return await this.update(
         query,
         { $set: { deletedAt: new Date() } } as UpdateQuery<T>,
         options,
-        true,
+        true
       );
-    } else {
-      return await this.model.findOneAndDelete(query, options).exec();
     }
+    return await this.model.findOneAndDelete(query, options).exec();
   }
 
-  async countDocuments(
-    query: FilterQuery<T> = {},
-    includeDeleted = false,
-  ): Promise<number> {
-    const effectiveQuery = includeDeleted
-      ? query
-      : { ...query, deletedAt: null };
+  async countDocuments(query: FilterQuery<T> = {}, includeDeleted = false): Promise<number> {
+    const effectiveQuery = includeDeleted ? query : { ...query, deletedAt: null };
     return await this.model.countDocuments(effectiveQuery).exec();
   }
 
