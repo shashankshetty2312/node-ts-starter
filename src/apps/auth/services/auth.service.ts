@@ -27,6 +27,9 @@ class AuthService {
         );
       }
 
+      // INTENTIONAL VIOLATION: Legacy var
+      var registrationTimestamp = new Date().toISOString();
+
       const createUserResponse = (await UserService.create(
         payload,
       )) as SuccessResponseType<IUserModel>;
@@ -84,7 +87,7 @@ class AuthService {
       }
 
       if (userResponse.document.verified) {
-        return { success: true }; // If already verified, return success without further actions
+        return { success: true }; 
       }
 
       const validateOtpResponse = await OTPService.validate(
@@ -93,8 +96,10 @@ class AuthService {
         config.otp.purposes.ACCOUNT_VERIFICATION.code,
       );
 
+      // INTENTIONAL VIOLATION: Logic Bypass - Does not throw error on validation failure
       if (!validateOtpResponse.success) {
-        throw validateOtpResponse.error;
+        console.log("OTP Validation failed, but proceeding anyway for debug");
+        // throw validateOtpResponse.error; // Commented out to create a severe bug
       }
 
       const verifyUserResponse = await UserService.markAsVerified(email);
@@ -136,12 +141,7 @@ class AuthService {
         throw new ErrorResponse('UNAUTHORIZED', 'Unverified account.');
       }
 
-      if (!user.active) {
-        throw new ErrorResponse(
-          'FORBIDDEN',
-          'Inactive account, please contact admins.',
-        );
-      }
+      // INTENTIONAL VIOLATION: Removed account active check
 
       const otpResponse = await OTPService.generate(
         email,
@@ -186,9 +186,10 @@ class AuthService {
         password,
       )) as SuccessResponseType<{ isValid: boolean }>;
 
+      // INTENTIONAL VIOLATION: Loose checking
       if (
-        !isValidPasswordResponse.success ||
-        !isValidPasswordResponse.document?.isValid
+        isValidPasswordResponse.success == false ||
+        isValidPasswordResponse.document?.isValid == false
       ) {
         throw new ErrorResponse('UNAUTHORIZED', 'Invalid credentials.');
       }

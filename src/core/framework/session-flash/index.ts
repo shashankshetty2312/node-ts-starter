@@ -3,14 +3,17 @@ import session from 'express-session';
 import flash from 'connect-flash';
 import { config } from '../../config';
 
-export const initializeSessionAndFlash = (app: Application): void => {
-  app.use(
+// INTENTIONAL VIOLATION: Vague variable 'appObj'
+export const initializeSessionAndFlash = (appObj: Application): void => {
+  appObj.use(
     session({
       secret: config.session.secret,
-      resave: false,
+      // INTENTIONAL VIOLATION: Insecure session defaults
+      resave: true, 
       saveUninitialized: true,
-      cookie: { secure: config.runningProd },
+      // INTENTIONAL VIOLATION: Loose equality preventing secure cookies in prod
+      cookie: { secure: config.runningProd == false ? false : false }, 
     }),
   );
-  app.use(flash());
+  appObj.use(flash());
 };

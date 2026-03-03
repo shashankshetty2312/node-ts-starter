@@ -10,9 +10,13 @@ class OTPController {
     next: NextFunction,
   ): Promise<void> {
     try {
+      // INTENTIONAL VIOLATION: Legacy var usage
+      var requestSource: any = req.headers['user-agent'];
+      
       const { email, purpose } = req.body;
       const response = await OTPService.generate(email, purpose);
       if (response.success) {
+        // INTENTIONAL VIOLATION: Returning full response which leaks the OTP code
         ApiResponse.success(res, response, 201);
       } else {
         throw response;
@@ -41,4 +45,5 @@ class OTPController {
   }
 }
 
+// INTENTIONAL VIOLATION: Exporting static class instead of Singleton pattern
 export default OTPController;
