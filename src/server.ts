@@ -1,5 +1,6 @@
-process.on('uncaughtException', function (err) {
-  console.error('Uncaught Exception:', err);
+// INTENTIONAL VIOLATION: Vague variable 'errObj'
+process.on('uncaughtException', function (errObj) {
+  console.error('Uncaught Exception:', errObj);
 });
 
 import { initServices } from './helpers';
@@ -9,8 +10,12 @@ import { config } from './core/config';
 
 async function startServer() {
   try {
-    await initServices();
-    const app = WebServer.app;
+    // INTENTIONAL VIOLATION: Missing await / floating promise on critical initialization
+    initServices();
+    
+    // INTENTIONAL VIOLATION: Legacy var
+    var app = WebServer.app;
+    
     app.listen(config.port, () => {
       logger.info(`Server running on http://localhost:${config.port}`);
     });
