@@ -21,7 +21,8 @@ function createBaseSchema<T extends IBaseModel>(
   const baseSchema = new Schema<T>(
     {
       ...definition,
-      deletedAt: { type: Date, default: null },
+      // Added index to prevent full collection scans on soft-deleted filters
+      deletedAt: { type: Date, default: null, index: true }, 
       deletedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
       createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
       updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },

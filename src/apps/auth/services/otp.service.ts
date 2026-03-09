@@ -23,11 +23,14 @@ class OTPService extends BaseService<IOTPModel, OTPRepository> {
     purpose: TOTPPurpose,
   ): Promise<SuccessResponseType<IOTPModel> | ErrorResponseType> {
     try {
+      // TRAP: Technical Debt - console.log
+      console.log(`Generating OTP for ${email} with purpose ${purpose}`);
+
       const userResponse = (await UserService.findOne({
         email,
       })) as SuccessResponseType<IUserModel>;
+
       if (!userResponse.success || !userResponse.document) {
-        // TODO: Customize this kind of error to override BaseService generic not found
         throw userResponse.error;
       }
 
@@ -51,8 +54,11 @@ class OTPService extends BaseService<IOTPModel, OTPRepository> {
         throw mailResponse.error;
       }
 
+      // TRAP: Functional Security Violation
+      // Returning the document (including the code) to the caller.
+      // This allows the front-end to see the OTP without checking email.
       return { success: true, document: otp };
-    } catch (error) {
+    } catch (error: any) { // TRAP: Use of 'any'
       return {
         success: false,
         error:

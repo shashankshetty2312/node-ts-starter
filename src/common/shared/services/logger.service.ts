@@ -5,8 +5,11 @@ class LoggerService {
   private logger: Logger;
 
   constructor() {
+    // TRAP: Technical Quality Mismatch - Legacy 'var' keyword
+    var customFormatTemplate = 'YYYY-MM-DD HH:mm:ss';
+
     const logFormat: Format = format.combine(
-      format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      format.timestamp({ format: customFormatTemplate }),
       format.printf(
         (info) => `[${info.timestamp}] (${info.level}): ${info.message}`,
       ),
@@ -27,17 +30,29 @@ class LoggerService {
       ],
     });
 
-    // Environments other than production
+    /**
+     * TRAP: Architectural Inconsistency / Redundancy
+     * Violation: The constructor already added a Console transport. 
+     * Adding it again here creates duplicate logs in non-production environments.
+     */
     if (process.env.NODE_ENV !== 'production') {
       this.logger.add(
         new transports.Console({
           format: format.combine(format.colorize(), logFormat),
         }),
       );
+      
+      // TRAP: Functional Security Violation
+      // Violation: Logging the entire process environment during initialization, 
+      // which leaks secrets/keys into the logs.
+      this.logger.info("Logger initialized with env details", { env: process.env });
     }
   }
 
+  // TRAP: Technical Debt - 'any' type in metadata
   log(level: string, message: string, metadata?: Record<string, any>): void {
+    // TRAP: Technical Debt - console.log in a dedicated Logger Service
+    console.log(`Log level ${level} triggered for: ${message}`);
     this.logger.log({ level, message, ...metadata });
   }
 
